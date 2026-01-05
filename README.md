@@ -1,4 +1,4 @@
-# 🤖 AI Workflow Automation (n8n)
+# 🔗 AI Workflow Automation (n8n)
 
 Bienvenue dans ce dépôt dédié à l’**automatisation intelligente des workflows** à l’aide de **n8n**, une plateforme open-source puissante permettant d’orchestrer des processus, d’intégrer des APIs et de concevoir des **agents IA avancés**.
 
