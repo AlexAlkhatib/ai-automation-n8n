@@ -129,11 +129,11 @@ La demande pour des profils maîtrisant l’automatisation et l’IA appliquée 
 
 ## 🧠 Ce Que Vous Allez Apprendre
 
-✔ Concevoir des workflows intelligents
-✔ Automatiser des tâches complexes avec des agents IA
-✔ Construire des systèmes modulaires et scalables
-✔ Intégrer IA + données structurées
-✔ Déployer des automatisations en production
+- ✔ Concevoir des workflows intelligents
+- ✔ Automatiser des tâches complexes avec des agents IA
+- ✔ Construire des systèmes modulaires et scalables
+- ✔ Intégrer IA + données structurées
+- ✔ Déployer des automatisations en production
 
 
 ## 👤 Auteur
