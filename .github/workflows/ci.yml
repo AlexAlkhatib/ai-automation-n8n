@@ -1,0 +1,54 @@
+name: Qualité
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Valider les workflows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Valider le format n8n et la sécurité
+        run: python3 scripts/validate_workflows.py
+
+      - name: Vérifier que le catalogue est à jour
+        run: python3 scripts/build_catalog.py --check
+
+  docs:
+    name: Générer la documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installer les dépendances de documentation
+        run: pip install -r requirements-docs.txt
+
+      - name: Construire les schémas, le PDF et le PowerPoint
+        run: |
+          python3 scripts/make_diagrams.py
+          python3 scripts/generate_docs.py
+          ls -lh docs/*.pdf docs/*.pptx
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: |
+            docs/*.pdf
+            docs/*.pptx
+          retention-days: 14

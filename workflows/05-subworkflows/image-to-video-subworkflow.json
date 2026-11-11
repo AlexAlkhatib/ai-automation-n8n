@@ -1,0 +1,357 @@
+{
+  "name": "05 — Image-to-Video Subworkflow (Seedance)",
+  "nodes": [
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $json.data.text }}"
+            },
+            {
+              "content": "=You are an assistant for video prompt and image-to-video generation.\n\nYour task is to:\n\n1. Create an effective Video Prompt to prompt a video generation model based on user's input\n\n2.Output only the following two values in JSON format:\nprompt: The text prompt for the video.\nimage_url: The URL of the image to generate the video from. Fetch this value from the last row of the attached Google Sheet Log tool.\nReturn only these two fields in your response, formatted as a JSON object.",
+              "role": "system"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -2176,
+        -80
+      ],
+      "id": "a6581fa8-3537-42ce-b9f6-e0f9e3e5a6ee",
+      "name": "Video Prompt Agent"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.6,
+      "position": [
+        -2128,
+        160
+      ],
+      "id": "5585ad79-d423-4a2c-bc8f-0a6b17b8b6a3",
+      "name": "Sheets Log (AI tool)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.wavespeed.ai/api/v3/bytedance/seedance-v1-lite-i2v-720p",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "camera_fixed",
+              "value": "false"
+            },
+            {
+              "name": "duration",
+              "value": "5"
+            },
+            {
+              "name": "image",
+              "value": "={{ $json.message.content.image_url }}"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.message.content.prompt }}"
+            },
+            {
+              "name": "seed",
+              "value": "-1"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1840,
+        -64
+      ],
+      "id": "dd843b39-1e9c-4748-80f4-85b816740c47",
+      "name": "Create Video (Seedance)"
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -1616,
+        -64
+      ],
+      "id": "867886fc-3168-4793-a6d7-eda91f25234f",
+      "name": "Poll Wait (15s)",
+      "webhookId": "b825d0b2-2411-43d6-96a5-1eb99414c4d6"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.wavespeed.ai/api/v3/predictions/{{ $json.data.id }}/result",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1456,
+        -64
+      ],
+      "id": "9a84a07e-5a91-4dbf-b8c0-de2ef5b67bba",
+      "name": "Check Video Status"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c187d8bd-382f-4c1c-900d-bf38d4d708d4",
+              "leftValue": "={{ $json.data.status }}",
+              "rightValue": "completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1280,
+        -64
+      ],
+      "id": "a41e66b8-0014-4746-bcdb-b34c8ebd636f",
+      "name": "Completed?"
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -1280,
+        208
+      ],
+      "id": "f9dcd9fb-106e-4241-aa5c-5e0e55bfd5af",
+      "name": "Retry Wait (15s)",
+      "webhookId": "9c915674-06bf-4b38-96f5-ccb831e2a1af"
+    },
+    {
+      "parameters": {
+        "operation": "sendVideo",
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "file": "={{ $json.data.outputs[0] }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1088,
+        -80
+      ],
+      "id": "2518f8e0-cbe3-4660-9c6d-2aa0f80a8770",
+      "name": "Send Video on Telegram",
+      "webhookId": "f9982196-8bb9-4b20-895c-7600d25daeef"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "Image URL"
+            },
+            {
+              "name": "Date"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -2736,
+        -80
+      ],
+      "id": "ea77f1a0-0d4d-4298-b260-fcecdbbbf432",
+      "name": "When Called by Orchestrator"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "message": "Could you provide the video idea that you want to generate from this image?",
+        "responseType": "freeText",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -2448,
+        -80
+      ],
+      "id": "6976ce88-e7b6-4b74-b8c0-17bfb0344765",
+      "name": "Ask Video Idea (Telegram)",
+      "webhookId": "8043e4d5-b45a-4a39-8c2f-c69d1fe6cbaf"
+    }
+  ],
+  "connections": {
+    "Video Prompt Agent": {
+      "main": [
+        [
+          {
+            "node": "Create Video (Seedance)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheets Log (AI tool)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Video Prompt Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Video (Seedance)": {
+      "main": [
+        [
+          {
+            "node": "Poll Wait (15s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll Wait (15s)": {
+      "main": [
+        [
+          {
+            "node": "Check Video Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Video Status": {
+      "main": [
+        [
+          {
+            "node": "Completed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Completed?": {
+      "main": [
+        [
+          {
+            "node": "Send Video on Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Retry Wait (15s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retry Wait (15s)": {
+      "main": [
+        [
+          {
+            "node": "Check Video Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Called by Orchestrator": {
+      "main": [
+        [
+          {
+            "node": "Ask Video Idea (Telegram)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ask Video Idea (Telegram)": {
+      "main": [
+        [
+          {
+            "node": "Video Prompt Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

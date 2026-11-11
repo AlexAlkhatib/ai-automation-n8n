@@ -1,0 +1,24 @@
+{
+  "name": "ai-workflow-automation-n8n",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Bibliothèque de workflows n8n prêts à l'emploi : agents IA, RAG, multi-agents, MCP et automatisations marketing.",
+  "license": "MIT",
+  "author": "Alex Alkhatib",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "n8n start",
+    "import": "bash scripts/import_workflows.sh",
+    "link": "python3 scripts/link_subworkflows.py",
+    "validate": "python3 scripts/validate_workflows.py",
+    "catalog": "python3 scripts/build_catalog.py",
+    "diagrams": "python3 scripts/make_diagrams.py",
+    "docs": "python3 scripts/generate_docs.py",
+    "test": "npm run validate && python3 scripts/build_catalog.py --check"
+  },
+  "devDependencies": {
+    "n8n": "2.47.3"
+  }
+}

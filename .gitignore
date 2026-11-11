@@ -1,0 +1,33 @@
+# n8n local data & logs
+.n8n/
+n8n_data/
+*.sqlite
+*.sqlite-journal
+*.log
+
+# Secrets — ne jamais committer
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Système / éditeurs
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Artefacts de build locaux
+dist/
+build/
+*.zip
+tmp_preview/
+npm-install.log

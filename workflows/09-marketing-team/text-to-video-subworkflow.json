@@ -1,0 +1,245 @@
+{
+  "name": "09 — Subworkflow: Text-to-Video",
+  "nodes": [
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $json['Video Idea'] }}"
+            },
+            {
+              "content": "=You are an expert Text-to-Video Generation Prompt Engineer, working inside an n8n automation.\nYour only task is to generate clear, vivid, and effective prompts to be passed into a video generation API.\nYou do not output any explanations, commentary, or formatting. Return only the prompt string to generate the video.\n\n🔒 Constraints:\n\nOutput a single-line, coherent prompt optimized for high-quality video generation.\n\nInclude only characters and numbers, no special characters like \"\"# \" ! ()\"\"\n\nDo not include prompt metadata (e.g., duration, resolution, frame rate, model name, seed).\n\nYou must not respond with markdown, code blocks, or labels. Output the prompt text only.\n\nDo not explain or summarize your reasoning. Output the final result only.\n\n🧠 Prompt Engineering Guidelines:\n\nTranslate vague descriptions into rich, dynamic scene details.\n\nEnhance prompt with descriptors: motion, pacing, mood, environment, lighting, cinematic style.\n\nUse cinematic or artistic keywords where relevant (e.g., \"sweeping aerial shot,\" \"shallow depth of field,\" \"dramatic lighting\").\n\nResolve ambiguities. Clarify unclear requests into visually distinct and dynamic concepts.\n\n✅ Your output should resemble this format:\n\n“A sweeping aerial shot of a futuristic city at dusk, flying over neon-lit skyscrapers, glowing billboards flickering, light rain falling, reflections on glass, moody synthwave atmosphere, cinematic style”",
+              "role": "system"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        224,
+        0
+      ],
+      "id": "133f3929-ab9e-481b-b293-061b85ca2f30",
+      "name": "Video Prompt Agent"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.wavespeed.ai/api/v3/google/veo3-fast",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"aspect_ratio\": \"16:9\",\n  \"duration\": 8,\n  \"generate_audio\": true,\n  \"prompt\": \"{{ $json.message.content }}\",\n  \"resolution\": \"720p\"\n}",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        592,
+        0
+      ],
+      "id": "f4db6cbe-4c53-4baf-b600-0b2d6229e069",
+      "name": "Wavespeed Post"
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        800,
+        0
+      ],
+      "id": "7b80e69f-5c69-444b-9fe7-1b58663d0356",
+      "name": "Wait 15 Secs",
+      "webhookId": "50165773-6711-4486-9563-2a489a25e2f3"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.wavespeed.ai/api/v3/predictions/{{ $json.data.id }}/result",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1024,
+        0
+      ],
+      "id": "168a9a2f-cb5b-4cd5-a902-2b2f9c6dc7dc",
+      "name": "Wavespeed Get"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f0754090-65f3-4bbb-b02b-1d2a6b68de08",
+              "leftValue": "={{ $json.data.status }}",
+              "rightValue": "completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1248,
+        0
+      ],
+      "id": "d21d2cb7-0681-4efa-9ad4-6a7c6e22289a",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1280,
+        224
+      ],
+      "id": "84fc051c-0a9d-43a5-927c-7def4d056d76",
+      "name": "Wait another 15 Secs",
+      "webhookId": "676deeed-22d4-4260-a7ac-8a2cec3a2035"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "Video Idea"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "3cdfa690-bc08-42fc-a893-4a18e7a8b216",
+      "name": "When Executed by Another Workflow"
+    }
+  ],
+  "connections": {
+    "Video Prompt Agent": {
+      "main": [
+        [
+          {
+            "node": "Wavespeed Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wavespeed Post": {
+      "main": [
+        [
+          {
+            "node": "Wait 15 Secs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 15 Secs": {
+      "main": [
+        [
+          {
+            "node": "Wavespeed Get",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wavespeed Get": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Wait another 15 Secs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait another 15 Secs": {
+      "main": [
+        [
+          {
+            "node": "Wavespeed Get",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Video Prompt Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

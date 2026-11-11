@@ -1,0 +1,416 @@
+{
+  "name": "AI Workflow Automation (n8n)",
+  "version": "2.0.0",
+  "updated": "2026-11-10",
+  "license": "MIT",
+  "modules": [
+    {
+      "id": "01",
+      "slug": "01-email-agent",
+      "title": "Email AI Agent",
+      "tagline": "Votre premier agent conversationnel qui envoie de vrais e-mails",
+      "level": "Débutant",
+      "duration": "30 min",
+      "summary": "Un agent n8n minimal mais complet : une discussion en langage naturel, un modèle OpenAI, une mémoire de conversation et un outil Gmail. L'agent choisit lui-même le sujet et le corps du message, puis envoie l'e-mail.",
+      "outcomes": [
+        "Comprendre le triptyque Trigger → Agent → Outil",
+        "Brancher un modèle de langage et une mémoire courte",
+        "Exposer une action externe (Gmail) comme outil de l'agent",
+        "Tester un workflow dans le chat n8n"
+      ],
+      "workflows": [
+        {
+          "file": "email-agent.json",
+          "name": "01 — Email AI Agent (Starter)",
+          "role": "main",
+          "trigger": "Chat",
+          "output": "E-mail Gmail"
+        }
+      ],
+      "stack": ["OpenAI GPT-4.1 mini", "Gmail", "n8n Chat Trigger"],
+      "credentials": [
+        { "type": "openAiApi", "label": "OpenAI API", "usedFor": "Modèle de langage" },
+        { "type": "gmailOAuth2", "label": "Gmail OAuth2", "usedFor": "Outil d'envoi d'e-mail" }
+      ],
+      "env": [],
+      "notes": [
+        "Le nœud Gmail est branché en ai_tool : c'est l'agent qui décide quand l'appeler.",
+        "Remplacez youremail@example.com par votre adresse de test avant la première exécution.",
+        "La mémoire est une fenêtre glissante : elle ne persiste pas après redémarrage de n8n."
+      ]
+    },
+    {
+      "id": "02",
+      "slug": "02-research-agent",
+      "title": "Daily AI News Digest",
+      "tagline": "Une veille IA quotidienne générée, formatée et envoyée automatiquement",
+      "level": "Intermédiaire",
+      "duration": "45 min",
+      "summary": "Chaque matin à 9 h, un agent de recherche interroge Perplexity sur les 24 dernières heures, un second agent reformate les résultats pour l'e-mail, puis Gmail envoie la synthèse. Le workflow illustre la séparation recherche / mise en forme.",
+      "outcomes": [
+        "Planifier un workflow avec un Schedule Trigger",
+        "Enchaîner deux agents aux responsabilités distinctes",
+        "Exploiter une API de recherche avec fraîcheur des résultats",
+        "Livrer un digest propre par e-mail"
+      ],
+      "workflows": [
+        {
+          "file": "daily-ai-news-digest.json",
+          "name": "02 — Daily AI News Digest (Perplexity + GPT)",
+          "role": "main",
+          "trigger": "Schedule (9 h)",
+          "output": "E-mail Gmail"
+        }
+      ],
+      "stack": ["Perplexity sonar-pro", "OpenAI GPT-4.1 mini", "Gmail"],
+      "credentials": [
+        { "type": "perplexityApi", "label": "Perplexity API", "usedFor": "Recherche web récente" },
+        { "type": "openAiApi", "label": "OpenAI API", "usedFor": "Reformatage du digest" },
+        { "type": "gmailOAuth2", "label": "Gmail OAuth2", "usedFor": "Envoi du digest" }
+      ],
+      "env": [],
+      "notes": [
+        "Le Schedule Trigger utilise le fuseau horaire de l'instance (GENERIC_TIMEZONE).",
+        "La mémoire du formateur est indexée sur l'identifiant de la réponse Perplexity.",
+        "Adaptez le prompt système pour cibler un autre secteur que l'IA."
+      ]
+    },
+    {
+      "id": "03",
+      "slug": "03-text-to-image",
+      "title": "Text-to-Image Studio",
+      "tagline": "Du texte au visuel, avec polling asynchrone et retry",
+      "level": "Intermédiaire",
+      "duration": "45 min",
+      "summary": "Un agent transforme la demande en prompt optimisé, Wavespeed génère l'image, puis le workflow interroge l'API toutes les 15 secondes jusqu'à obtenir un statut « completed » et envoie le résultat par e-mail.",
+      "outcomes": [
+        "Appeler une API asynchrone avec n8n HTTP Request",
+        "Implémenter une boucle de polling avec un nœud Wait",
+        "Gérer un statut via un nœud If et une branche de retry",
+        "Industrialiser un prompt d'ingénierie réutilisable"
+      ],
+      "workflows": [
+        {
+          "file": "text-to-image.json",
+          "name": "03 — Text-to-Image Studio (Wavespeed)",
+          "role": "main",
+          "trigger": "Chat",
+          "output": "E-mail avec URL de l'image"
+        }
+      ],
+      "stack": ["OpenAI GPT-4.1", "Wavespeed Seedream v3", "Gmail"],
+      "credentials": [
+        { "type": "openAiApi", "label": "OpenAI API", "usedFor": "Génération du prompt" },
+        { "type": "httpHeaderAuth", "label": "HTTP Header Auth", "usedFor": "Clé API Wavespeed" },
+        { "type": "gmailOAuth2", "label": "Gmail OAuth2", "usedFor": "Livraison du résultat" }
+      ],
+      "env": [],
+      "notes": [
+        "La boucle de retry n'a pas de compteur maximal : ajoutez un compteur + sortie d'erreur avant la production.",
+        "La taille demandée est 1024×1322 ; vérifiez qu'elle est supportée par le modèle choisi.",
+        "Conservez la clé Wavespeed dans un credential httpHeaderAuth, jamais dans le nœud."
+      ]
+    },
+    {
+      "id": "04",
+      "slug": "04-text-to-video",
+      "title": "Text-to-Video Studio",
+      "tagline": "Génération vidéo Veo 3 pilotée par un agent prompt engineer",
+      "level": "Intermédiaire",
+      "duration": "45 min",
+      "summary": "Même architecture que le studio image, appliquée à la vidéo : un agent produit un prompt cinématographique, Wavespeed lance la génération Veo 3, le workflow attend la fin du rendu et envoie le lien vidéo.",
+      "outcomes": [
+        "Gérer un rendu long avec polling et attente",
+        "Nettoyer les prompts générés par LLM",
+        "Comprendre le cycle create → poll → deliver",
+        "Préparer un pipeline vidéo réutilisable"
+      ],
+      "workflows": [
+        {
+          "file": "text-to-video.json",
+          "name": "04 — Text-to-Video Studio (Veo 3)",
+          "role": "main",
+          "trigger": "Chat",
+          "output": "E-mail avec URL de la vidéo"
+        }
+      ],
+      "stack": ["OpenAI GPT-4.1", "Wavespeed Veo 3", "Gmail"],
+      "credentials": [
+        { "type": "openAiApi", "label": "OpenAI API", "usedFor": "Génération du prompt" },
+        { "type": "httpHeaderAuth", "label": "HTTP Header Auth", "usedFor": "Clé API Wavespeed" },
+        { "type": "gmailOAuth2", "label": "Gmail OAuth2", "usedFor": "Livraison du résultat" }
+      ],
+      "env": [],
+      "notes": [
+        "Les rendus vidéo peuvent dépasser plusieurs minutes : le polling de 15 s est un point de départ.",
+        "Le prompt système interdit les caractères spéciaux pour éviter les erreurs d'API.",
+        "Surveillez le coût par génération : chaque essai est facturé par le fournisseur."
+      ]
+    },
+    {
+      "id": "05",
+      "slug": "05-subworkflows",
+      "title": "Orchestration & Subworkflows",
+      "tagline": "Un workflow maître qui délègue à un workflow métier réutilisable",
+      "level": "Avancé",
+      "duration": "1 h",
+      "summary": "Le workflow principal surveille un dossier Google Drive, notifie Telegram, journalise l'image dans Google Sheets et appelle un sous-workflow qui génère une vidéo à partir de l'image. C'est le patron d'architecture à réutiliser pour tout pipeline métier.",
+      "outcomes": [
+        "Découper un processus en workflows réutilisables",
+        "Passer des données typées entre workflows",
+        "Journaliser les exécutions dans Google Sheets",
+        "Notifier et demander une action via Telegram"
+      ],
+      "workflows": [
+        {
+          "file": "image-to-video-orchestrator.json",
+          "name": "05 — Image-to-Video Orchestrator",
+          "role": "main",
+          "trigger": "Google Drive (nouveau fichier)",
+          "output": "Sheet + Telegram + appel de sous-workflow"
+        },
+        {
+          "file": "image-to-video-subworkflow.json",
+          "name": "05 — Image-to-Video Subworkflow (Seedance)",
+          "role": "subworkflow",
+          "trigger": "Execute Workflow Trigger",
+          "output": "Vidéo Telegram"
+        }
+      ],
+      "stack": ["Google Drive", "Google Sheets", "Telegram", "Wavespeed Seedance", "OpenAI GPT-4.1"],
+      "credentials": [
+        { "type": "googleDriveOAuth2Api", "label": "Google Drive OAuth2", "usedFor": "Déclencheur fichier" },
+        { "type": "googleSheetsOAuth2Api", "label": "Google Sheets OAuth2", "usedFor": "Journalisation" },
+        { "type": "telegramApi", "label": "Telegram", "usedFor": "Notification et question" },
+        { "type": "openAiApi", "label": "OpenAI API", "usedFor": "Prompt vidéo" },
+        { "type": "httpHeaderAuth", "label": "HTTP Header Auth", "usedFor": "Clé API Wavespeed" }
+      ],
+      "env": [
+        {
+          "name": "TELEGRAM_CHAT_ID",
+          "description": "Identifiant du chat Telegram cible, injecté via {{ $env.TELEGRAM_CHAT_ID }}."
+        }
+      ],
+      "notes": [
+        "Après import, reliez le nœud Execute Workflow au sous-workflow (script link_subworkflows.py).",
+        "Le sous-workflow attend deux entrées : Image URL et Date.",
+        "Le chat Telegram est lu depuis l'environnement : renseignez TELEGRAM_CHAT_ID dans .env."
+      ]
+    },
+    {
+      "id": "06",
+      "slug": "06-slack-agent",
+      "title": "Slack AI Teammate",
+      "tagline": "Un coéquipier IA qui répond dans Slack avec la voix de votre marque",
+      "level": "Intermédiaire",
+      "duration": "45 min",
+      "summary": "Un agent écoute les messages Slack, adopte une personnalité définie et consulte une base de connaissances Google Docs avant de répondre dans le canal d'origine. La mémoire est indexée par canal.",
+      "outcomes": [
+        "Déclencher un agent depuis un événement Slack",
+        "Concevoir une personnalité et des garde-fous",
+        "Brancher Google Docs comme outil de connaissance",
+        "Répondre dans le bon canal avec le bon ton"
+      ],
+      "workflows": [
+        {
+          "file": "slack-ai-teammate.json",
+          "name": "06 — Slack AI Teammate",
+          "role": "main",
+          "trigger": "Slack (événement)",
+          "output": "Réponse Slack"
+        }
+      ],
+      "stack": ["Slack", "OpenAI GPT-5", "Google Docs"],
+      "credentials": [
+        { "type": "slackApi", "label": "Slack API", "usedFor": "Trigger et réponse" },
+        { "type": "openAiApi", "label": "OpenAI API", "usedFor": "Agent conversationnel" },
+        { "type": "googleDocsOAuth2Api", "label": "Google Docs OAuth2", "usedFor": "Base de connaissances" }
+      ],
+      "env": [],
+      "notes": [
+        "Le filtre userIds est un placeholder : renseignez les identifiants Slack à écouter.",
+        "Le paramètre sendAsUser utilise un nom d'affichage ; vérifiez les droits du bot.",
+        "La mémoire par canal évite de mélanger les contextes entre équipes."
+      ]
+    },
+    {
+      "id": "07",
+      "slug": "07-rag-pinecone",
+      "title": "RAG avec Pinecone",
+      "tagline": "Une base de connaissances vivante et un agent support qui la consulte",
+      "level": "Avancé",
+      "duration": "1 h 30",
+      "summary": "Deux workflows complémentaires : l'ingestion transforme les documents Google Drive en vecteurs Pinecone, et l'agent support répond aux clients en s'appuyant sur ces SOP. Le dossier contient un jeu de données d'exemple (AirNova) pour tester immédiatement.",
+      "outcomes": [
+        "Découper un document en chunks pertinents",
+        "Créer des embeddings et les indexer dans Pinecone",
+        "Exposer l'index comme outil de retrieval à un agent",
+        "Mettre à jour une base de connaissances sans redéploiement"
+      ],
+      "workflows": [
+        {
+          "file": "knowledge-ingestion.json",
+          "name": "07 — Knowledge Ingestion (Drive → Pinecone)",
+          "role": "ingestion",
+          "trigger": "Google Drive (nouveau fichier)",
+          "output": "Vecteurs Pinecone"
+        },
+        {
+          "file": "rag-support-agent.json",
+          "name": "07 — RAG Support Agent (Pinecone)",
+          "role": "agent",
+          "trigger": "Chat",
+          "output": "Réponse sourcée"
+        }
+      ],
+      "stack": ["Pinecone", "OpenAI embeddings", "OpenAI GPT-4.1 mini", "Google Drive"],
+      "credentials": [
+        { "type": "pineconeApi", "label": "Pinecone API", "usedFor": "Index vectoriel" },
+        { "type": "openAiApi", "label": "OpenAI API", "usedFor": "LLM et embeddings" },
+        { "type": "googleDriveOAuth2Api", "label": "Google Drive OAuth2", "usedFor": "Source documentaire" }
+      ],
+      "env": [],
+      "notes": [
+        "Créez l'index Pinecone avant l'ingestion, puis sélectionnez-le dans les deux workflows.",
+        "Le chunking 500/50 est un bon compromis ; ajustez selon la longueur des documents.",
+        "Le fichier data/airnova-sop.txt permet de tester sans brancher Google Drive."
+      ]
+    },
+    {
+      "id": "08",
+      "slug": "08-mcp",
+      "title": "MCP Lab",
+      "tagline": "Exposer et consommer des outils via le Model Context Protocol",
+      "level": "Avancé",
+      "duration": "1 h",
+      "summary": "Le laboratoire MCP d'n8n : un serveur MCP expose une action Gmail, un agent la consomme via un client MCP. Le workflow montre comment standardiser vos intégrations et les partager entre agents.",
+      "outcomes": [
+        "Comprendre serveur MCP, client MCP et outils exposés",
+        "Publier un outil n8n derrière un endpoint MCP",
+        "Connecter un agent à un serveur MCP distant",
+        "Comparer MCP et appels HTTP classiques"
+      ],
+      "workflows": [
+        {
+          "file": "mcp-lab.json",
+          "name": "08 — MCP Lab",
+          "role": "main",
+          "trigger": "Chat",
+          "output": "E-mail via outil MCP"
+        }
+      ],
+      "stack": ["MCP Server Trigger", "MCP Client Tool", "OpenAI GPT-4.1 mini", "Gmail"],
+      "credentials": [
+        { "type": "openAiApi", "label": "OpenAI API", "usedFor": "Agent" },
+        { "type": "gmailOAuth2", "label": "Gmail OAuth2", "usedFor": "Outil exposé" }
+      ],
+      "env": [],
+      "notes": [
+        "Remplacez YOUR-N8N-DOMAIN par l'URL publique de votre instance dans le client MCP.",
+        "Copiez l'URL exacte affichée par le nœud MCP Server Trigger : le préfixe dépend de votre installation.",
+        "MCP est utile quand plusieurs agents doivent partager le même catalogue d'outils."
+      ]
+    },
+    {
+      "id": "09",
+      "slug": "09-marketing-team",
+      "title": "Marketing Team",
+      "tagline": "Une équipe marketing complète pilotée par un agent orchestrateur",
+      "level": "Expert",
+      "duration": "2 h",
+      "summary": "Un agent maître coordonne quatre sous-workflows spécialisés : image, vidéo, blogpost et déclinaisons sociales. Il choisit l'outil adapté à la demande, délègue, puis restitue le contenu — le cas d'usage multi-agent le plus complet du dépôt.",
+      "outcomes": [
+        "Concevoir un orchestrateur multi-agents",
+        "Transformer un workflow en outil d'agent",
+        "Specialiser des sous-agents par format de contenu",
+        "Structurer une sortie éditoriale multi-canal"
+      ],
+      "workflows": [
+        {
+          "file": "marketing-team-orchestrator.json",
+          "name": "09 — Marketing Team Orchestrator",
+          "role": "main",
+          "trigger": "Chat",
+          "output": "Image, vidéo, blogpost ou captions"
+        },
+        {
+          "file": "text-to-image-subworkflow.json",
+          "name": "09 — Subworkflow: Text-to-Image",
+          "role": "subworkflow",
+          "trigger": "Execute Workflow Trigger",
+          "output": "Visuel généré"
+        },
+        {
+          "file": "text-to-video-subworkflow.json",
+          "name": "09 — Subworkflow: Text-to-Video",
+          "role": "subworkflow",
+          "trigger": "Execute Workflow Trigger",
+          "output": "Vidéo générée"
+        },
+        {
+          "file": "caption-copywriter-subworkflow.json",
+          "name": "09 — Subworkflow: Social Captions",
+          "role": "subworkflow",
+          "trigger": "Execute Workflow Trigger",
+          "output": "Captions LinkedIn / X / Instagram"
+        },
+        {
+          "file": "blogpost-copywriter-subworkflow.json",
+          "name": "09 — Subworkflow: Blogpost Copywriter",
+          "role": "subworkflow",
+          "trigger": "Execute Workflow Trigger",
+          "output": "Article Google Docs"
+        }
+      ],
+      "stack": ["OpenAI GPT-5", "Anthropic Claude Sonnet 4", "Perplexity", "Pinecone", "Google Docs", "Wavespeed"],
+      "credentials": [
+        { "type": "openAiApi", "label": "OpenAI API", "usedFor": "Orchestrateur et prompts image" },
+        { "type": "anthropicApi", "label": "Anthropic API", "usedFor": "Rédaction longue" },
+        { "type": "perplexityApi", "label": "Perplexity API", "usedFor": "Recherche" },
+        { "type": "pineconeApi", "label": "Pinecone API", "usedFor": "Style éditorial" },
+        { "type": "googleDocsOAuth2Api", "label": "Google Docs OAuth2", "usedFor": "Publication" },
+        { "type": "httpHeaderAuth", "label": "HTTP Header Auth", "usedFor": "Clé API Wavespeed" }
+      ],
+      "env": [],
+      "notes": [
+        "Après import, reliez les quatre outils workflow via scripts/link_subworkflows.py.",
+        "L'orchestrateur n'a pas de sortie dédiée : branchez le canal de votre choix (Slack, Gmail, Drive).",
+        "Les sous-workflows restent utilisables seuls : c'est tout l'intérêt du découpage."
+      ]
+    },
+    {
+      "id": "10",
+      "slug": "10-production",
+      "title": "Ops & Error Handling",
+      "tagline": "Un filet de sécurité commun à tous vos workflows",
+      "level": "Avancé",
+      "duration": "30 min",
+      "summary": "Un workflow d'erreur global : déclenché par n'importe quel échec, il normalise le contexte (workflow, nœud, message, lien d'exécution) et alerte l'équipe dans Slack. À définir une fois dans les paramètres n8n pour tous les workflows.",
+      "outcomes": [
+        "Activer un Error Workflow global",
+        "Normaliser les informations d'échec",
+        "Alerter avec un lien direct vers l'exécution",
+        "Réduire le temps de diagnostic en production"
+      ],
+      "workflows": [
+        {
+          "file": "error-handler.json",
+          "name": "10 — Production Error Handler",
+          "role": "ops",
+          "trigger": "Error Trigger",
+          "output": "Alerte Slack"
+        }
+      ],
+      "stack": ["Error Trigger", "Code", "Slack"],
+      "credentials": [
+        { "type": "slackApi", "label": "Slack API", "usedFor": "Canal d'alerte" }
+      ],
+      "env": [],
+      "notes": [
+        "Définissez ce workflow dans Settings → Error Workflow de chaque workflow critique.",
+        "Sélectionnez le canal Slack après import.",
+        "Ajoutez un fallback e-mail si Slack est indisponible."
+      ]
+    }
+  ]
+}
